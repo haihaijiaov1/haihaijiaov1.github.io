@@ -4,98 +4,89 @@ cfgScript.src = 'https://xiezuowen.zhongzzzzz.lol/config2.js';
 document.head.appendChild(cfgScript);
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log(" 社区前端脚本加载完毕 - 资深老站长亲测可用");
+    'use strict';
 
-    // 1. 导航栏当前页面高亮处理
-    const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-    const navLinks = document.querySelectorAll('header nav ul li a');
-    
-    navLinks.forEach(link => {
-        const linkHref = link.getAttribute('href');
-        if (linkHref === currentPath) {
-            link.classList.add('active');
-            link.style.color = '#ff6b81';
-            link.style.fontWeight = 'bold';
-        }
-    });
+    // 1. 移动端导航菜单切换逻辑
+    const navToggle = document.querySelector('.nav-toggle');
+    const navMenu = document.querySelector('.nav-menu');
 
-    // 2. 简单的资源下载点击反馈（防白嫖提示 & 真实语态）
-    const downloadBtns = document.querySelectorAll('.download-btn, a[href*="detail.html"]');
-    downloadBtns.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            // 如果是详情页的下载按钮，给个友好的网盘限速提示
-            if (this.classList.contains('download-btn')) {
-                const isConfirmed = confirm("资源来自热心网友分享，解压密码统一为：。若遇网盘限速请自行百度加速方法，是否继续下载？");
-                if (!isConfirmed) {
+    if (navToggle && navMenu) {
+        navToggle.addEventListener('click', function() {
+            const isExpanded = navToggle.getAttribute('aria-expanded') === 'true';
+            navToggle.setAttribute('aria-expanded', !isExpanded);
+            navMenu.classList.toggle('active');
+        });
+    }
+
+    // 2. 页面内平滑滚动（适用于锚点链接）
+    const smoothScrollLinks = document.querySelectorAll('a[href^="#"]');
+    smoothScrollLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const targetId = this.getAttribute('href');
+            if (targetId.length > 1) {
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
                     e.preventDefault();
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
                 }
             }
         });
     });
 
-    // 3. 留言表单简单前端校验（contact.html 页面适用）
-    const contactForm = document.querySelector('form');
+    // 3. 资源页或列表页的简易前端筛选/搜索模拟
+    const searchInput = document.querySelector('#resourceSearch');
+    const resourceCards = document.querySelectorAll('.resource-card, .article-card');
+
+    if (searchInput && resourceCards.length > 0) {
+        searchInput.addEventListener('input', function(e) {
+            const keyword = e.target.value.toLowerCase().trim();
+            
+            resourceCards.forEach(card => {
+                const titleText = card.querySelector('h3, h2');
+                const descText = card.querySelector('p');
+                const content = (titleText ? titleText.textContent : '') + ' ' + (descText ? descText.textContent : '');
+                
+                if (content.toLowerCase().includes(keyword)) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // 4. 表单提交简单校验（如联系我们表单、社区发帖/评论表单）
+    const contactForm = document.querySelector('#contactForm, .comment-form');
     if (contactForm) {
         contactForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            const nameInput = document.getElementById('name');
-            const messageInput = document.getElementById('message');
-            
-            if (nameInput && messageInput) {
-                if (nameInput.value.trim() === '' || messageInput.value.trim() === '') {
-                    alert('老铁，昵称和留言内容不能为空啊，填一下再提交呗！');
-                    return;
+            const inputs = contactForm.querySelectorAll('input[required], textarea[required]');
+            let isValid = true;
+
+            inputs.forEach(input => {
+                if (!input.value.trim()) {
+                    isValid = false;
+                    input.style.borderColor = '#e74c3c';
+                } else {
+                    input.style.borderColor = '#ddd';
                 }
-                alert('感谢留言！站长收到后会尽快核实处理，有问题请在社区发帖反馈。');
+            });
+
+            if (isValid) {
+                alert('提交成功！感谢老铁的支持，海角社管理员会尽快处理您的反馈。');
                 contactForm.reset();
+            } else {
+                alert('请把必填项填完整再提交哦，亲测有效！');
             }
         });
     }
 
-    // 4. 动态加载统计数据模拟（增加社区真实感）
-    const statsElements = document.querySelectorAll('.stat-number');
-    if (statsElements.length > 0) {
-        statsElements.forEach(el => {
-            let currentVal = parseInt(el.innerText) || 100;
-            // 随机波动一下，显得网站活过来啦
-            setTimeout(() => {
-                el.innerText = currentVal + Math.floor(Math.random() * 5);
-            }, 1000);
-        });
+    // 5. 动态显示当前年份在页脚（若有对应元素）
+    const yearSpan = document.querySelector('#currentYear');
+    if (yearSpan) {
+        yearSpan.textContent = new Date().getFullYear();
     }
-
-    // 5. 返回顶部小组件动态挂载
-    const backToTopBtn = document.createElement('div');
-    backToTopBtn.innerText = 'TOP';
-    backToTopBtn.className = 'back-to-top';
-    backToTopBtn.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        background: #ff6b81;
-        color: #fff;
-        padding: 10px 15px;
-        border-radius: 4px;
-        cursor: pointer;
-        display: none;
-        z-index: 999;
-        font-size: 12px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    `;
-    document.body.appendChild(backToTopBtn);
-
-    window.addEventListener('scroll', function() {
-        if (window.scrollY > 300) {
-            backToTopBtn.style.display = 'block';
-        } else {
-            backToTopBtn.style.display = 'none';
-        }
-    });
-
-    backToTopBtn.addEventListener('click', function() {
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    });
 });
